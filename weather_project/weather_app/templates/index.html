@@ -1,0 +1,69 @@
+<!-- weather_app/templates/index.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather App</title>
+</head>
+<body>
+    <h1>Weather App</h1>
+    <form id="weatherForm">
+        <label for="location">Enter location:</label>
+        <input type="text" id="location" name="location" placeholder="e.g., New York" list="cityOptions">
+        <datalist id="cityOptions"></datalist>
+        <button type="submit">Get Weather</button>
+    </form>
+
+    <div id="weatherInfo"></div>
+
+    <script>
+        document.getElementById('weatherForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            fetch('/api/weather/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',  // Include the CSRF token in the headers
+                },
+                body: formData,
+                console.log(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the API response here
+                const weatherInfoDiv = document.getElementById('weatherInfo');
+                weatherInfoDiv.innerHTML = `
+                    <h2>Weather Information</h2>
+                    <p>Location: ${data.location}</p>
+                    <p>Temperature: ${data.temperature} &#8451;</p>
+                    <p>Humidity: ${data.humidity}%</p>
+                    <p>Description: ${data.description}</p>
+                `;
+            })
+            .catch(error => console.error(error));
+        });
+
+        // Autocomplete for search bar
+        const locationInput = document.getElementById('location');
+        const cityOptions = document.getElementById('cityOptions');
+
+        locationInput.addEventListener('input', function() {
+            const searchValue = locationInput.value.trim();
+
+            fetch(`/api/available_cities/?search=${encodeURIComponent(searchValue)}`)
+                .then(response => response.json())
+                .then(data => {
+                    cityOptions.innerHTML = '';
+                    data.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = `${city.name}, ${city.country}`;
+                        cityOptions.appendChild(option);
+                    });
+                })
+                .catch(error => console.error(error));
+        });
+    </script>
+</body>
+</html>
